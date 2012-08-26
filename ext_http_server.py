@@ -22,7 +22,10 @@ __version__ = '0.1'
 # Helpers
 #
 class RateLimitWriter(object):
-    """A class that rate limits writing to associated file streams"""
+    """A class that rate limits writing to associated file streams
+
+    This method only supports threading and not forking (multiprocessing).
+    """
     INTERVAL_LEN = .125
     block_size = 16384
     lock = threading.Lock()
@@ -202,7 +205,12 @@ class RangeHandler(SimpleHTTPRequestHandler, object):
 
 
 class RateLimitHandler(BaseHTTPRequestHandler, object):
-    """A hander that supports rate limiting from server to client."""
+    """A hander that supports rate limiting from server to client.
+
+    This handler will not properly rate limit if a ForkinMixIn is used in the
+    HTTPServer object. However, it works great in combination with the
+    ThreadingMixIn.
+    """
     def handle(self):
         """Setup rate limiting on the outgoing connection."""
         self.wfile = RateLimitWriter(self.wfile)
