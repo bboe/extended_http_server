@@ -1,6 +1,6 @@
 ### Installation
 
-    pip install extended_http_server
+    pip install ext_http_server
 
 ### Generate a certificate
 
