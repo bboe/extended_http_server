@@ -15,7 +15,7 @@ from optparse import OptionParser
 from warnings import warn
 
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 
 #
@@ -224,7 +224,7 @@ class MyHandler(AuthHandler, RangeHandler, RateLimitHandler):
     """A handler that supports auth, download resuming, and throttling."""
 
 
-class MyServer(SecureHTTPServer, SocketServer.ThreadingMixIn):
+class MyServer(SocketServer.ThreadingMixIn, SecureHTTPServer):
     """A threaded SecureHTTPServer with basic error filtering"""
     def handle_error(self, request, client_address):
         """Disable trackebacks on connection close errors."""
