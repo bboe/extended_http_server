@@ -81,10 +81,10 @@ class RateLimitWriter(object):
 #
 class SecureHTTPServer(HTTPServer, object):
     """A HTTP Server object that support HTTPS"""
-    def __init__(self, address, handler, config_file):
+    def __init__(self, address, handler, cert_file):
         """Support TLS/SSL by wrapping the socket."""
         super(SecureHTTPServer, self).__init__(address, handler)
-        self.socket = ssl.wrap_socket(self.socket, certfile=config_file)
+        self.socket = ssl.wrap_socket(self.socket, certfile=cert_file)
 
 
 #
@@ -149,6 +149,11 @@ class RangeHandler(SimpleHTTPRequestHandler, object):
         """Set is_ranged flag if a valid Range header is sent."""
         self.handle_range()
         super(RangeHandler, self).do_GET()
+
+    def do_HEAD(self):
+        """Set is_ranged flag if a valid Range header is sent."""
+        self.handle_range()
+        super(RangeHandler, self).do_HEAD()
 
     def handle_range(self):
         """Parse the Range header if it exists."""
