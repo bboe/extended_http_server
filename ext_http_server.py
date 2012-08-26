@@ -201,7 +201,7 @@ class RangeHandler(SimpleHTTPRequestHandler, object):
         self.is_ranged = False
 
 
-class RateLimitHandler(SimpleHTTPRequestHandler, object):
+class RateLimitHandler(BaseHTTPRequestHandler, object):
     """A hander that supports rate limiting from server to client."""
     def handle(self):
         """Setup rate limiting on the outgoing connection."""
