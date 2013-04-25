@@ -227,7 +227,7 @@ class MyHandler(AuthHandler, RangeHandler, RateLimitHandler):
 class MyServer(SocketServer.ThreadingMixIn, SecureHTTPServer):
     """A threaded SecureHTTPServer with basic error filtering"""
     def handle_error(self, request, client_address):
-        """Disable trackebacks on connection close errors."""
+        """Disable tracebacks on connection close errors."""
         exc_type, exc_value, _ = sys.exc_info()
         if exc_type is socket.error and exc_value[0] == 32:
             print('{0} closed connection'.format(client_address))
