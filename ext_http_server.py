@@ -102,7 +102,7 @@ class AuthHandler(BaseHTTPRequestHandler, object):
     @classmethod
     def add_user(cls, username, password):
         """Add a set of credentials."""
-        cls.users.add(base64.b64encode('{}:{}'.format(username, password)))
+        cls.users.add(base64.b64encode('{0}:{1}'.format(username, password)))
 
     def handle_auth(self, head=False):
         """Output the authentication headers if the user is not valid."""
