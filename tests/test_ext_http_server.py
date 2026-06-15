@@ -156,6 +156,12 @@ def test_server_serves_range_request(secure_server):
     assert body == b"56789ABCDEFGHIJ"
 
 
+def test_server_uses_daemon_threads():
+    # Daemon connection threads keep lingering keep-alive connections from
+    # blocking interpreter shutdown on Ctrl-C (see issue #1).
+    assert MyServer.daemon_threads is True
+
+
 def test_set_rate_limit_computes_block_size():
     RateLimitWriter.set_rate_limit(128)
     assert RateLimitWriter.block_size == int(1024 * 128 * RateLimitWriter.INTERVAL_LEN)
