@@ -259,6 +259,10 @@ class SecureHTTPServer(HTTPServer):
 class MyServer(socketserver.ThreadingMixIn, SecureHTTPServer):
     """A threaded SecureHTTPServer with basic error filtering."""
 
+    # Run connection threads as daemons so a lingering HTTP/1.1 keep-alive
+    # connection cannot block interpreter shutdown on Ctrl-C (see issue #1).
+    daemon_threads = True
+
     def handle_error(self, request: socket | tuple[bytes, socket], client_address: Any) -> None:  # noqa: ANN401
         """Disable tracebacks on connection close errors."""
         _, exc_value, _ = sys.exc_info()
@@ -317,6 +321,8 @@ def main() -> int:
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nGoodbye")
+    finally:
+        server.server_close()
     return 0
 
 
