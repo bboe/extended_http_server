@@ -30,9 +30,6 @@ except PackageNotFoundError:  # running from a source checkout without an instal
     __version__ = "unknown"
 
 
-#
-# BaseHTTPRequestHandler extensions
-#
 class AuthHandler(SimpleHTTPRequestHandler):
     """A handler that supports basic HTTP authentication/authorization."""
 
@@ -168,16 +165,10 @@ class RateLimitHandler(SimpleHTTPRequestHandler):
         super().handle()
 
 
-#
-# Combined classes for use with the main functionality
-#
 class MyHandler(AuthHandler, RangeHandler, RateLimitHandler):
     """A handler that supports auth, download resuming, and throttling."""
 
 
-#
-# Helpers
-#
 class RateLimitWriter:
     """A class that rate limits writing to associated file streams.
 
@@ -248,9 +239,6 @@ class RateLimitWriter:
             message = message[to_send:]
 
 
-#
-# HTTPServer extensions
-#
 class SecureHTTPServer(HTTPServer):
     """A HTTP Server object that supports HTTPS."""
 

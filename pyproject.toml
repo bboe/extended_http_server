@@ -38,6 +38,7 @@ Homepage = "https://github.com/bboe/extended_http_server"
 
 [dependency-groups]
 dev = ["pyright"]
+test = ["pytest", "trustme"]
 
 
 [tool.pyright]
@@ -72,3 +73,21 @@ ignore = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+  "ANN", # annotations are optional in tests
+  "D", # docstrings are optional in tests
+  "INP001", # the tests directory is intentionally not a package
+  "PLR2004", # literal values are clearer than named constants in assertions
+  "RUF076", # an autouse fixture is the right tool for resetting global state
+  "S101", # asserts are how tests assert
+  "S106", # test credentials are not real secrets
+  "SLF001", # tests exercise private internals directly
+]
+
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

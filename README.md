@@ -1,3 +1,9 @@
+# ext_http_server
+
+An extended version of Python's `http.server` that turns a simple static file
+server into one supporting HTTPS, HTTP Basic authentication, server-to-client
+rate limiting, and resumable downloads via HTTP `Range` requests.
+
 ### Requirements
 
 `ext_http_server` supports Python 3.10 through 3.14.
@@ -10,9 +16,13 @@ Install the `ext_http_server` command with [uv](https://docs.astral.sh/uv/):
 
 ### Generate a certificate
 
-Run the following to generate cert.pem:
+Generate a self-signed certificate, writing the private key and certificate
+together into `cert.pem` (the single file `--cert` expects). This uses a modern
+ECDSA P-256 key, which every common TLS client supports (Ed25519 keys are
+newer but are rejected by some clients, including the LibreSSL-based `curl` that
+ships with macOS as of June 2026):
 
-    openssl req -new -x509 -days 365 -nodes -out cert.pem -keyout cert.pem
+    openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -noenc -keyout cert.pem -out cert.pem -days 365 -subj "/CN=localhost"
 
 ### Running ext_http_server
 
