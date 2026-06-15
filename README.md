@@ -4,7 +4,9 @@
 
 ### Installation
 
-    pip install ext_http_server
+Install the `ext_http_server` command with [uv](https://docs.astral.sh/uv/):
+
+    uv tool install ext_http_server
 
 ### Generate a certificate
 
@@ -18,6 +20,10 @@ If you have files you want to serve in `/tmp/path/to/files/` run the following
 to serve them up with a max outgoing throughput of 16KBps:
 
     ext_http_server --cert cert.pem -d /tmp/path/to/files -r16 -a foo:bar
+
+Or run it once without installing:
+
+    uvx ext_http_server --cert cert.pem -d /tmp/path/to/files -r16 -a foo:bar
 
 By default, you will be able to access the webserver at
 [https://localhost:8000](https://localhost:8000). To authenticate, use the

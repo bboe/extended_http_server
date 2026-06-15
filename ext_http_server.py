@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """A small set of improvements upon the Simple and BaseHTTPServers."""
 
 import argparse
@@ -11,11 +10,15 @@ import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer, SimpleHTTPRequestHandler
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import ClassVar
 from warnings import warn
 
-__version__ = "1.0"
+try:
+    __version__ = version("ext_http_server")
+except PackageNotFoundError:  # running from a source checkout without an install
+    __version__ = "unknown"
 
 
 #
