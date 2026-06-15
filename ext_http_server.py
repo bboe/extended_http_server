@@ -60,8 +60,7 @@ class AuthHandler(SimpleHTTPRequestHandler):
             ``True`` when the request carries valid credentials, ``False`` otherwise.
 
         """
-        auth = self.headers.get("Authorization")
-        if auth:
+        if auth := self.headers.get("Authorization"):
             try:
                 _, encoded = auth.split(" ", 1)
             except ValueError:
@@ -84,6 +83,7 @@ class RangeHandler(SimpleHTTPRequestHandler):
     """A handler that supports HTTP requests with the Range header.
 
     The Range header allows for the resume download functionality.
+
     """
 
     is_ranged: bool
@@ -154,8 +154,8 @@ class RateLimitHandler(SimpleHTTPRequestHandler):
     """A handler that supports rate limiting from server to client.
 
     This handler will not properly rate limit if a ForkingMixIn is used in the
-    HTTPServer object. However, it works great in combination with the
-    ThreadingMixIn.
+    HTTPServer object. However, it works great in combination with the ThreadingMixIn.
+
     """
 
     def handle(self) -> None:
@@ -173,6 +173,7 @@ class RateLimitWriter:
     """A class that rate limits writing to associated file streams.
 
     This method only supports threading and not forking (multiprocessing).
+
     """
 
     INTERVAL_LEN: ClassVar[float] = 0.125

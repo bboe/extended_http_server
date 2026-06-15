@@ -2,22 +2,25 @@
 build-backend = "hatchling.build"
 requires = ["hatchling", "hatch-vcs"]
 
+[dependency-groups]
+dev = ["pyright"]
+test = ["pytest", "trustme"]
 
 [project]
 authors = [
-    { name = "Bryce Boe", email = "bbzbryce@gmail.com" },
+  {name = "Bryce Boe", email = "bbzbryce@gmail.com"}
 ]
 dynamic = ["version"]
 classifiers = [
-    "Intended Audience :: Developers",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14"
 ]
 description = "An extended version of Python's SimpleHTTPServer that supports https, authentication, rate limiting, and download resuming."
 keywords = ["http authentication", "http rate limit", "http resume"]
@@ -27,39 +30,31 @@ name = "ext_http_server"
 readme = "README.md"
 requires-python = ">=3.10"
 
-
 [project.scripts]
 ext_http_server = "ext_http_server:main"
-
 
 [project.urls]
 Homepage = "https://github.com/bboe/extended_http_server"
 
+[tool.hatch.build.targets.wheel]
+include = ["ext_http_server.py"]
 
-[dependency-groups]
-dev = ["pyright"]
-test = ["pytest", "trustme"]
-
+[tool.hatch.version]
+source = "vcs"
 
 [tool.pyright]
 include = ["ext_http_server.py"]
 pythonVersion = "3.10"
 typeCheckingMode = "strict"
 
-
-[tool.hatch.version]
-source = "vcs"
-
-
-[tool.hatch.build.targets.wheel]
-include = ["ext_http_server.py"]
-
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
 preview = true
 target-version = "py310"
-
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -67,13 +62,8 @@ ignore = [
   "CPY001", # file-level copyright notice; LICENSE.txt is the canonical copyright
   "D203", # 1 blank line required before class docstring (conflicts with D211)
   "D213", # multi-line docstring summary should start at the second line (conflicts with D212)
-  "T201", # `print` is the intended console output for this CLI server
+  "T201" # `print` is the intended console output for this CLI server
 ]
-
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
@@ -84,10 +74,8 @@ convention = "google"
   "RUF076", # an autouse fixture is the right tool for resetting global state
   "S101", # asserts are how tests assert
   "S106", # test credentials are not real secrets
-  "SLF001", # tests exercise private internals directly
+  "SLF001" # tests exercise private internals directly
 ]
 
-
-[tool.pytest.ini_options]
-pythonpath = ["."]
-testpaths = ["tests"]
+[tool.ruff.lint.pydocstyle]
+convention = "google"
