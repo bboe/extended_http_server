@@ -1,0 +1,11 @@
+repos:
+  - hooks:
+      - id: codesorter
+    repo: https://github.com/praw-dev/CodeSorter
+    rev: 8aa6144b41e0f789124b2ca377d246ffd1fbb317  # frozen: v0.2.7
+  - hooks:
+      - args: [--fix]
+        id: ruff-check
+      - id: ruff-format
+    repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 3b3f7c3f57fe9925356faf5fe6230835138be230  # frozen: v0.15.17

@@ -1,3 +1,7 @@
+### Requirements
+
+`ext_http_server` supports Python 3.10 through 3.14.
+
 ### Installation
 
     pip install ext_http_server
