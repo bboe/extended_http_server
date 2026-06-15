@@ -17,6 +17,8 @@ jobs:
           fetch-depth: 0 # hatch-vcs needs tags to build the project for pyright
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       - run: uvx pre-commit run --all-files
+        env:
+          SKIP: no-commit-to-branch # this guard is local-only; CI runs on main
 
   test:
     name: Test on Python ${{ matrix.python-version }}
