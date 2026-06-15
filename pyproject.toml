@@ -36,6 +36,16 @@ ext_http_server = "ext_http_server:main"
 Homepage = "https://github.com/bboe/extended_http_server"
 
 
+[dependency-groups]
+dev = ["pyright"]
+
+
+[tool.pyright]
+include = ["ext_http_server.py"]
+pythonVersion = "3.10"
+typeCheckingMode = "strict"
+
+
 [tool.hatch.version]
 source = "vcs"
 
@@ -46,38 +56,19 @@ include = ["ext_http_server.py"]
 
 [tool.ruff]
 line-length = 100
+preview = true
 target-version = "py310"
 
 
 [tool.ruff.lint]
+select = ["ALL"]
 ignore = [
-  "D203", # 1 blank line required before class docstring
-  "D213", # Multi-line docstring summary should start at the second line
+  "CPY001", # file-level copyright notice; LICENSE.txt is the canonical copyright
+  "D203", # 1 blank line required before class docstring (conflicts with D211)
+  "D213", # multi-line docstring summary should start at the second line (conflicts with D212)
+  "T201", # `print` is the intended console output for this CLI server
 ]
-select = [
-  "A", # flake8-builtins
-  "ARG", # flake8-unused-arguments
-  "B", # flake8-bugbear
-  "C4", # flake8-comprehensions
-  "D", # pydocstyle
-  "E", # pycodestyle errors
-  "EM", # flake8-errmsg
-  "EXE", # flake8-executable
-  "F", # pyflakes
-  "FA", # flake8-future-annotations
-  "FLY", # flynt
-  "G", # flake8-logging-format
-  "I", # isort
-  "ISC", # flake8-implicit-str-concat
-  "N", # pep8-naming
-  "PGH", # pygrep-hooks
-  "PIE", # flake8-pie
-  "PTH", # flake8-use-pathlib
-  "Q", # flake8-quotes
-  "RET", # flake8-return
-  "RSE", # flake8-raise
-  "RUF", # ruff-specific rules
-  "SIM", # flake8-simplify
-  "UP", # pyupgrade
-  "W", # pycodestyle warnings
-]
+
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

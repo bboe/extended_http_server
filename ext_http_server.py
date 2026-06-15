@@ -1,19 +1,28 @@
 """A small set of improvements upon the Simple and BaseHTTPServers."""
 
+from __future__ import annotations
+
 import argparse
 import base64
 import errno
+import io
 import os
 import socketserver
 import ssl
 import sys
 import threading
 import time
+from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer, SimpleHTTPRequestHandler
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import ClassVar
+from typing import TYPE_CHECKING, Any, AnyStr, ClassVar, cast
 from warnings import warn
+
+if TYPE_CHECKING:
+    from socket import socket
+
+    from _typeshed import SupportsRead, SupportsWrite
 
 try:
     __version__ = version("ext_http_server")
@@ -24,7 +33,7 @@ except PackageNotFoundError:  # running from a source checkout without an instal
 #
 # BaseHTTPRequestHandler extensions
 #
-class AuthHandler(BaseHTTPRequestHandler):
+class AuthHandler(SimpleHTTPRequestHandler):
     """A handler that supports basic HTTP authentication/authorization."""
 
     message = "Authentication required."
@@ -32,23 +41,28 @@ class AuthHandler(BaseHTTPRequestHandler):
     users: ClassVar[set[str]] = set()
 
     @classmethod
-    def add_user(cls, username, password):
+    def add_user(cls, username: str, password: str) -> None:
         """Add a set of credentials."""
         token = base64.b64encode(f"{username}:{password}".encode()).decode()
         cls.users.add(token)
 
-    def do_GET(self):
+    def do_GET(self) -> None:
         """Call the parent's do_GET function if the user is authorized."""
         if self.handle_auth():
             super().do_GET()
 
-    def do_HEAD(self):
+    def do_HEAD(self) -> None:
         """Call the parent's do_HEAD function if the user is authorized."""
         if self.handle_auth(head=True):
             super().do_HEAD()
 
-    def handle_auth(self, *, head=False):
-        """Output the authentication headers if the user is not valid."""
+    def handle_auth(self, *, head: bool = False) -> bool:
+        """Output the authentication headers if the user is not valid.
+
+        Returns:
+            ``True`` when the request carries valid credentials, ``False`` otherwise.
+
+        """
         auth = self.headers.get("Authorization")
         if auth:
             try:
@@ -59,7 +73,7 @@ class AuthHandler(BaseHTTPRequestHandler):
             if encoded in AuthHandler.users:
                 return True
         # Send authentication header information
-        self.send_response(401)
+        self.send_response(HTTPStatus.UNAUTHORIZED)
         self.send_header("WWW-Authenticate", f'Basic realm="{AuthHandler.realm}"')
         self.send_header("Content-Type", "text/html")
         self.send_header("Content-Length", str(len(AuthHandler.message)))
@@ -75,65 +89,71 @@ class RangeHandler(SimpleHTTPRequestHandler):
     The Range header allows for the resume download functionality.
     """
 
-    def copyfile(self, source, outputfile):
+    is_ranged: bool
+    range_begin: int
+    range_end: int | None
+
+    def copyfile(self, source: SupportsRead[AnyStr], outputfile: SupportsWrite[AnyStr]) -> None:
         """Copy only the ranged part of the file when appropriate."""
-        if self.is_ranged:
+        if self.is_ranged and isinstance(source, io.IOBase):
             source.seek(self.range_begin)
         super().copyfile(source, outputfile)
 
-    def do_GET(self):
+    def do_GET(self) -> None:
         """Set is_ranged flag if a valid Range header is sent."""
         self.handle_range()
         super().do_GET()
 
-    def do_HEAD(self):
+    def do_HEAD(self) -> None:
         """Set is_ranged flag if a valid Range header is sent."""
         self.handle_range()
         super().do_HEAD()
 
-    def handle_range(self):
+    def handle_range(self) -> None:
         """Parse the Range header if it exists."""
         self.is_ranged = False
-        if "range" in self.headers:
-            try:
-                range_unit, other = self.headers["range"].split("=", 1)
-                if range_unit == "bytes":
-                    if "," in other:  # Handle only a single range
-                        warn("Multiple ranges are not supported.", stacklevel=2)
-                        return
-                    begin, end = other.split("-", 1)
-                    if end:
-                        warn("Shortened ranges are not supported.", stacklevel=2)
-                        return
-                    self.range_begin = int(begin) if begin else 0
-                    self.range_end = None
-                    self.is_ranged = True
-            except ValueError:
-                pass
+        raw = self.headers.get("range")
+        if not raw or "=" not in raw:
+            return
+        range_unit, _, other = raw.partition("=")
+        if range_unit != "bytes" or "-" not in other:
+            return
+        if "," in other:  # Handle only a single range
+            warn("Multiple ranges are not supported.", stacklevel=2)
+            return
+        begin, _, end = other.partition("-")
+        if end:
+            warn("Shortened ranges are not supported.", stacklevel=2)
+            return
+        if begin and not begin.isdigit():
+            return
+        self.range_begin = int(begin) if begin else 0
+        self.range_end = None
+        self.is_ranged = True
 
-    def send_header(self, key, value):
+    def send_header(self, keyword: str, value: str) -> None:
         """Modify Content-Length and add Content-Range when ranged."""
-        if key == "Content-Length" and self.is_ranged:
+        if keyword == "Content-Length" and self.is_ranged:
             length = int(value)
             end = length - 1 if self.range_end is None else min(self.range_end, length - 1)
             value = str(1 + end - self.range_begin)
             self.send_header("Content-Range", f"bytes {self.range_begin}-{end}/{length}")
-        super().send_header(key, value)
+        super().send_header(keyword, value)
 
-    def send_response(self, code, message=None):
+    def send_response(self, code: int, message: str | None = None) -> None:
         """Send 206 status for ranged responses."""
-        if self.is_ranged and code == 200:
-            code = 206
+        if self.is_ranged and code == HTTPStatus.OK:
+            code = HTTPStatus.PARTIAL_CONTENT
         super().send_response(code, message)
 
-    def setup(self):
+    def setup(self) -> None:
         """Set HTTP/1.1 as Range is supported only on HTTP/1.1."""
         super().setup()
         self.protocol_version = "HTTP/1.1"
         self.is_ranged = False
 
 
-class RateLimitHandler(BaseHTTPRequestHandler):
+class RateLimitHandler(SimpleHTTPRequestHandler):
     """A handler that supports rate limiting from server to client.
 
     This handler will not properly rate limit if a ForkingMixIn is used in the
@@ -141,9 +161,10 @@ class RateLimitHandler(BaseHTTPRequestHandler):
     ThreadingMixIn.
     """
 
-    def handle(self):
+    def handle(self) -> None:
         """Set up rate limiting on the outgoing connection."""
-        self.wfile = RateLimitWriter(self.wfile)
+        # RateLimitWriter is a transparent write-proxy, not a BufferedIOBase subclass.
+        self.wfile = cast("io.BufferedIOBase", RateLimitWriter(self.wfile))
         super().handle()
 
 
@@ -163,15 +184,22 @@ class RateLimitWriter:
     This method only supports threading and not forking (multiprocessing).
     """
 
-    INTERVAL_LEN = 0.125
-    block_sent = 0
-    block_size = 16384
-    block_start = None
+    INTERVAL_LEN: ClassVar[float] = 0.125
+    block_sent: ClassVar[int] = 0
+    block_size: ClassVar[int] = 16384
+    block_start: ClassVar[float] = 0.0
     lock: ClassVar = threading.Lock()
 
+    wrapped: io.BufferedIOBase
+
     @classmethod
-    def bytes_to_write(cls, desired):
-        """Determine how many bytes to write and sleep when over the limit."""
+    def bytes_to_write(cls, desired: int) -> int:
+        """Determine how many bytes to write and sleep when over the limit.
+
+        Returns:
+            The number of bytes the caller may write now.
+
+        """
         to_send = 0
         while not to_send:
             with cls.lock:
@@ -190,24 +218,29 @@ class RateLimitWriter:
                     sleep_time = cls.INTERVAL_LEN - (now - cls.block_start)
                     if sleep_time > 0:
                         time.sleep(sleep_time)
-                    cls.block_start = None
+                    cls.block_start = 0.0
                     cls.block_sent = 0
         return to_send
 
     @classmethod
-    def set_rate_limit(cls, limit):
+    def set_rate_limit(cls, limit: float) -> None:
         """Set the rate limit in kilobytes per second."""
         cls.block_size = int(1024 * limit * cls.INTERVAL_LEN)
 
-    def __getattr__(self, attr):
-        """Redirect all function calls through the wrapped output stream."""
+    def __getattr__(self, attr: str) -> Any:  # noqa: ANN401
+        """Redirect all attribute access to the wrapped output stream.
+
+        Returns:
+            The corresponding attribute of the wrapped stream.
+
+        """
         return getattr(self.wrapped, attr)
 
-    def __init__(self, to_wrap):
+    def __init__(self, to_wrap: io.BufferedIOBase) -> None:
         """Store the output stream we are wrapping."""
         self.wrapped = to_wrap
 
-    def write(self, message):
+    def write(self, message: bytes) -> None:
         """Perform a throttled write to the wrapped output stream."""
         while message:
             to_send = RateLimitWriter.bytes_to_write(len(message))
@@ -221,7 +254,12 @@ class RateLimitWriter:
 class SecureHTTPServer(HTTPServer):
     """A HTTP Server object that supports HTTPS."""
 
-    def __init__(self, address, handler, cert_file):
+    def __init__(
+        self,
+        address: tuple[str, int],
+        handler: type[BaseHTTPRequestHandler],
+        cert_file: str | os.PathLike[str],
+    ) -> None:
         """Support TLS/SSL by wrapping the socket."""
         super().__init__(address, handler)
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -232,7 +270,7 @@ class SecureHTTPServer(HTTPServer):
 class MyServer(socketserver.ThreadingMixIn, SecureHTTPServer):
     """A threaded SecureHTTPServer with basic error filtering."""
 
-    def handle_error(self, request, client_address):
+    def handle_error(self, request: socket | tuple[bytes, socket], client_address: Any) -> None:  # noqa: ANN401
         """Disable tracebacks on connection close errors."""
         _, exc_value, _ = sys.exc_info()
         if isinstance(exc_value, OSError) and exc_value.errno == errno.EPIPE:
@@ -243,8 +281,13 @@ class MyServer(socketserver.ThreadingMixIn, SecureHTTPServer):
             super().handle_error(request, client_address)
 
 
-def main():
-    """Run a secure threaded server with auth resume and rate limit support."""
+def main() -> int:
+    """Run a secure threaded server with auth resume and rate limit support.
+
+    Returns:
+        The process exit status.
+
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("-p", "--port", default=8000, type=int)

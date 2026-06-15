@@ -9,3 +9,11 @@ repos:
       - id: ruff-format
     repo: https://github.com/astral-sh/ruff-pre-commit
     rev: 3b3f7c3f57fe9925356faf5fe6230835138be230  # frozen: v0.15.17
+  - hooks:
+      - entry: uv run --group dev pyright
+        id: pyright
+        language: system
+        name: pyright
+        pass_filenames: false
+        types: [python]
+    repo: local
